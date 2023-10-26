@@ -1,6 +1,4 @@
 using KWS;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Monos.WSIM.Runtime.Waters
@@ -22,12 +20,17 @@ namespace Monos.WSIM.Runtime.Waters
             {
                 curWaterHeight = waterSystem.transform.localPosition.y;
                 waterSystem.MeshSize = new Vector3(length, defaultWaterDepth, width);
-                waterSystem.transform.localPosition = new Vector3(0f, curWaterHeight + (CalculateHeight(CalculateVolume(GetRandomRainfallByCategory()))), 0f);
+                UpdateWaterLevel();
             }
         }
 
-        //measured in mm.
-        private float GetRandomRainfallByCategory(bool convert = true)
+        private void UpdateWaterLevel(bool increment = true)
+        {
+            waterSystem.transform.localPosition = new Vector3(0f, increment ? curWaterHeight + CalculateHeight(CalculateVolume(GetRandomRainfallByCategory())) : curWaterHeight - CalculateHeight(CalculateVolume(GetRandomRainfallByCategory())), 0f);
+        }
+
+        //measured in milimeter.
+        private float GetRandomRainfallByCategory(bool convertToMeter = true)
         {
             min = 0f;
             max = 1f;
@@ -63,7 +66,7 @@ namespace Monos.WSIM.Runtime.Waters
 
             tempRainfall = Random.Range(min, max);
 
-            return convert ? ConvertRainfallToMeter(tempRainfall) : tempRainfall;
+            return convertToMeter ? ConvertRainfallToMeter(tempRainfall) : tempRainfall;
         }
 
         private float ConvertRainfallToMeter(float rainfall)

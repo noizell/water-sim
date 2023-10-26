@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c03e477eda57bbd49a51e0f873bd363f, type: 3}
+  m_Name: SimulationSetup
+  m_EditorClassIdentifier: 
+  RealtimeSecondToHour: 3
+  MinRealtimeSecondToHour: 0
+  MaxRealtimeSecondToHour: 200
+  HourToDay: 24
+  MinHourToDay: 24
+  MaxHourToDay: 200
+  LightRainPrefab: {fileID: 1961903509672706, guid: 91d1a359c50bbbc4aac4f6e600aa56cb, type: 3}
+  MediumRainPrefab: {fileID: 3220256211649902271, guid: 5470673bc25d53f46a13f0ba8c98c271, type: 3}
+  HeavyRainPrefab: {fileID: 2709872975824125868, guid: 100ada54d9d209a4fb8899e641c07de7, type: 3}
+  RainDuration: 0
+  MinRainDuration: 0
+  MaxRainDuration: 0
+  ClearDayChance: 33
+  LowRainChance: 33
+  MediumRainChance: 33
+  HeavyRainChance: 33
+  DangerouslyDenseRainChance: 33
+  ExtremeRainChance: 33
