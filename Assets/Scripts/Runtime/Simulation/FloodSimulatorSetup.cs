@@ -1,5 +1,4 @@
 ﻿using Monos.WSIM.Runtime.Simulations;
-using System;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -9,25 +8,33 @@ namespace Monos.WSIM.Runtime.Simulations
     public class FloodSimulatorSetup : ScriptableObject
     {
         //Time Settings
-        [SerializeField] public float RealtimeSecondToHour = 1f;
-        [SerializeField] public float MinRealtimeSecondToHour = 0f;
-        [SerializeField] public float MaxRealtimeSecondToHour = 200f;
-        [SerializeField] public float HourToDay = 24f;
-        [SerializeField] public float MinHourToDay = 24f;
-        [SerializeField] public float MaxHourToDay = 200f;
+        public float RealtimeSecondToHour = 1f;
+        public float MinRealtimeSecondToHour = 0f;
+        public float MaxRealtimeSecondToHour = 200f;
+        public float HourToDay = 24f;
+        public float MinHourToDay = 24f;
+        public float MaxHourToDay = 200f;
 
         //Rain Settings
-        [SerializeField] public GameObject LightRainPrefab, MediumRainPrefab, HeavyRainPrefab;
-        [SerializeField] public float RainDuration;
-        [SerializeField] public float MinRainDuration = 1f;
-        [SerializeField] public float MaxRainDuration = 24f;
+        public GameObject LightRainPrefab, MediumRainPrefab, HeavyRainPrefab;
+        public int RainDuration = 1;
+        public int MinRainDuration = 1;
+        public int MaxRainDuration = 24;
 
-        [SerializeField] public float ClearDayChance = 33f;
-        [SerializeField] public float LowRainChance = 44f;
-        [SerializeField] public float MediumRainChance = 33f;
-        [SerializeField] public float HeavyRainChance = 22f;
-        [SerializeField] public float DangerouslyDenseRainChance = 22f;
-        [SerializeField] public float ExtremeRainChance = 11f;
+        public float ClearDayChance = 33f;
+        public float LowRainChance = 44f;
+        public float MediumRainChance = 33f;
+        public float HeavyRainChance = 22f;
+        public float DangerouslyDenseRainChance = 22f;
+        public float ExtremeRainChance = 11f;
+
+        public RainChanceProc ChanceProc;
+
+        public enum RainChanceProc
+        {
+            OnEveryHour = 0,
+            OnEveryDay = 1
+        }
     }
 }
 
@@ -189,11 +196,56 @@ namespace Monos.WSIM.Editors.Simulations
                 EditorGUILayout.EndHorizontal();
             }
 
+            public virtual void DrawSliderIntField(SerializedProperty prop, int min, int max, string labelName, float labelWidth = 140, float propFieldWidth = 120)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(labelName, GUILayout.Width(labelWidth));
+                prop.intValue = (int)EditorGUILayout.Slider(prop.intValue, min, max, GUILayout.Width(propFieldWidth));
+                EditorGUILayout.EndHorizontal();
+            }
+
             public virtual void DrawObjectField(SerializedProperty prop, float width)
             {
                 EditorGUILayout.ObjectField(prop, GUILayout.Width(350));
             }
 
+            public virtual void DrawLabelField(string labelDisplay, float width = 120, float height = 20)
+            {
+                EditorGUILayout.LabelField(labelDisplay, EditorStyles.boldLabel, GUILayout.Width(width), GUILayout.Height(height));
+            }
+
+            public virtual void DrawEnumField(SerializedProperty prop, string enumLabel, EnumDescStruct[] enumDesc, float labelWidth = 120, float labelHeight = 20, float width = 140, float height = 30)
+            {
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.LabelField(FindCorrectEnum(prop.enumValueIndex), EditorStyles.helpBox, GUILayout.Width(300), GUILayout.Height(20));
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(enumLabel, GUILayout.Width(labelWidth), GUILayout.Height(labelHeight));
+                EditorGUILayout.PropertyField(prop, GUIContent.none, GUILayout.Width(width), GUILayout.Height(height));
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+
+                string FindCorrectEnum(int index)
+                {
+                    for (int i = 0; i < enumDesc.Length; i++)
+                    {
+                        if (enumDesc[i].EnumIndex == index)
+                            return enumDesc[i].EnumDesc;
+                    }
+                    return "";
+                }
+            }
+
+            public struct EnumDescStruct
+            {
+                public int EnumIndex;
+                public string EnumDesc;
+
+                public EnumDescStruct(int enumIndex, string enumDesc)
+                {
+                    EnumIndex = enumIndex;
+                    EnumDesc = enumDesc;
+                }
+            }
         }
 
         public class TimeSettingsModal : FloodSimulationModalBase
@@ -214,11 +266,11 @@ namespace Monos.WSIM.Editors.Simulations
             protected override void DrawModal()
             {
                 EditorGUILayout.BeginVertical();
-                GUILayout.Label("Please set time for simulation, how many second in realtime shall pass within in-game hour(s), how many hour for a day, etc.", EditorStyles.helpBox);
+                GUILayout.Label("Simulation time setup, how many second in realtime shall pass within in-game hour(s), how many hour for a day, etc.", EditorStyles.largeLabel);
 
                 EditorGUILayout.BeginVertical("box");
                 GUILayout.Space(10);
-                EditorGUILayout.LabelField("[In-Game Time]", EditorStyles.boldLabel);
+                DrawLabelField("[In-Game Time]");
                 DrawSliderField(RealtimeSecondToHourProp, MinRealtimeSecondToHourProp.floatValue, MaxRealtimeSecondToHourProp.floatValue, "Real-time seconds to Hour", 160, 140);
                 DrawSliderField(HourToDayProp, MinHourToDayProp.floatValue, MaxHourToDayProp.floatValue, "Day Length (Hours)", 160, 140);
                 EditorGUILayout.EndVertical();
@@ -229,25 +281,59 @@ namespace Monos.WSIM.Editors.Simulations
         public class RainSettingsModal : FloodSimulationModalBase
         {
             SerializedProperty LightRainPrefabProp, MediumRainPrefabProp, HeavyRainPrefabProp;
+            SerializedProperty ClearDayChanceProp, LowRainChanceProp, MediumRainChanceProp, HeavyRainChanceProp, DangerouslyDenseRainChanceProp, ExtremeRainChanceProp;
+            SerializedProperty ChanceProcProp;
+            SerializedProperty RainDurationProp, MinRainDurationProp, MaxRainDurationProp;
 
             public RainSettingsModal(SerializedObject FloodSimObj) : base(FloodSimObj)
             {
                 LightRainPrefabProp ??= FloodSim.FindProperty("LightRainPrefab");
                 MediumRainPrefabProp ??= FloodSim.FindProperty("MediumRainPrefab");
                 HeavyRainPrefabProp ??= FloodSim.FindProperty("HeavyRainPrefab");
+                ClearDayChanceProp ??= FloodSim.FindProperty("ClearDayChance");
+                LowRainChanceProp ??= FloodSim.FindProperty("LowRainChance");
+                MediumRainChanceProp ??= FloodSim.FindProperty("MediumRainChance");
+                HeavyRainChanceProp ??= FloodSim.FindProperty("HeavyRainChance");
+                DangerouslyDenseRainChanceProp ??= FloodSim.FindProperty("DangerouslyDenseRainChance");
+                ExtremeRainChanceProp ??= FloodSim.FindProperty("ExtremeRainChance");
+                ChanceProcProp ??= FloodSim.FindProperty("ChanceProc");
+                RainDurationProp ??= FloodSim.FindProperty("RainDuration");
+                MinRainDurationProp ??= FloodSim.FindProperty("MinRainDuration");
+                MaxRainDurationProp ??= FloodSim.FindProperty("MaxRainDuration");
             }
 
             protected override void DrawModal()
             {
                 EditorGUILayout.BeginVertical();
-                GUILayout.Label("Setup for rain simulation.", EditorStyles.helpBox);
+                GUILayout.Label("Setup for rain simulation.", EditorStyles.largeLabel);
 
-                EditorGUILayout.BeginVertical("box");
+                EditorGUILayout.BeginVertical("box", GUILayout.ExpandWidth(true));
                 GUILayout.Space(10);
+                DrawLabelField("[Rain Prefabs]");
                 DrawObjectField(LightRainPrefabProp, 350f);
                 DrawObjectField(MediumRainPrefabProp, 350f);
                 DrawObjectField(HeavyRainPrefabProp, 350f);
                 EditorGUILayout.EndVertical();
+
+                EditorGUILayout.BeginVertical("box", GUILayout.ExpandWidth(true));
+                GUILayout.Space(10);
+                DrawLabelField("[Rain Chance]");
+                DrawSliderField(ClearDayChanceProp, 0, 100, "Clear Day Chance", 160, 140);
+                DrawSliderField(LowRainChanceProp, 0, 100, "Low Rain Chance", 160, 140);
+                DrawSliderField(MediumRainChanceProp, 0, 100, "Medium Rain Chance", 160, 140);
+                DrawSliderField(HeavyRainChanceProp, 0, 100, "Heavy Rain Chance", 160, 140);
+                DrawSliderField(DangerouslyDenseRainChanceProp, 0, 100, "Dense Rain Chance", 160, 140);
+                DrawSliderField(ExtremeRainChanceProp, 0, 100, "Extreme Rain Chance", 160, 140);
+                GUILayout.Space(10);
+                DrawLabelField("[Rain Behaviour]", 140);
+                DrawEnumField(ChanceProcProp, "Procs Behaviour", new EnumDescStruct[]
+                {
+                    new EnumDescStruct(0, "Rain calculated every hour passed."),
+                    new EnumDescStruct(1, "Rain calculated on each day pass.")
+                });
+                DrawSliderIntField(RainDurationProp, MinRainDurationProp.intValue, MaxRainDurationProp.intValue, "Average Rain Duration (floor to Int)", 160f, 140f);
+                EditorGUILayout.EndVertical();
+
                 EditorGUILayout.EndVertical();
             }
         }

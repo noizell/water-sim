@@ -7,7 +7,7 @@ using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.Windows;
 
-namespace Monos.WSIM.Debug
+namespace Monos.WSIM.Debugs
 {
     public static class WaterSimDebug
     {
@@ -47,5 +47,13 @@ public class GConst
     {
         public const string FLOOD_SIM_SETUP_DIR = "Assets/Resources/SimData";
         public const string FLOOD_SIM_SETUP_DIR_RUNTIME = "SimData";
+    }
+
+    public class RainSys
+    {
+        public const string LIGHT_RAIN = "Low";
+        public const string MEDIUM_RAIN = "Medium";
+        public const string HEAVY_RAIN = "Heavy";
+        public const string CLEAR_SKY = "Clear";
     }
 }

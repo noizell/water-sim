@@ -7,7 +7,7 @@ namespace Monos.WSIM.Runtime.Waters
     {
         [SerializeField] WaterSystem waterSystem;
         [SerializeField] float length, width;
-        [SerializeField] Rainfall rainfallCategory;
+        //[SerializeField] Rainfall rainfallCategory;
         [SerializeField] float defaultWaterDepth = 500f;
         public const float MM_DIVIDER = 1000f;
 
@@ -20,22 +20,33 @@ namespace Monos.WSIM.Runtime.Waters
             {
                 curWaterHeight = waterSystem.transform.localPosition.y;
                 waterSystem.MeshSize = new Vector3(length, defaultWaterDepth, width);
-                UpdateWaterLevel();
+                //UpdateWaterLevel();
             }
         }
 
         private void UpdateWaterLevel(bool increment = true)
         {
-            waterSystem.transform.localPosition = new Vector3(0f, increment ? curWaterHeight + CalculateHeight(CalculateVolume(GetRandomRainfallByCategory())) : curWaterHeight - CalculateHeight(CalculateVolume(GetRandomRainfallByCategory())), 0f);
+            //waterSystem.transform.localPosition = new Vector3(
+            //    0f,
+            //    increment ? waterSystem.transform.localPosition.y
+            //+ CalculateHeight(CalculateVolume(GetRandomRainfallByCategory())) : waterSystem.transform.localPosition.y
+            //- CalculateHeight(CalculateVolume(GetRandomRainfallByCategory())),
+            //    0f);
+        }
+
+        public void UpdateWaterLevel(float heightoffset, bool increment = true)
+        {
+            waterSystem.transform.localPosition = new Vector3(
+               0f,
+               increment ? waterSystem.transform.localPosition.y + heightoffset : waterSystem.transform.localPosition.y - heightoffset,
+               0f);
         }
 
         //measured in milimeter.
-        private float GetRandomRainfallByCategory(bool convertToMeter = true)
+        public void GetMinMaxRainfallByCategory(Rainfall category, out float min, out float max)
         {
-            min = 0f;
-            max = 1f;
-
-            switch (rainfallCategory)
+            min = max = 0;
+            switch (category)
             {
                 default:
                 case Rainfall.Low:
@@ -60,14 +71,56 @@ namespace Monos.WSIM.Runtime.Waters
 
                 case Rainfall.Extreme:
                     min = 151f;
-                    max = 99000f;
+                    max = 1000f;
                     break;
             }
-
-            tempRainfall = Random.Range(min, max);
-
-            return convertToMeter ? ConvertRainfallToMeter(tempRainfall) : tempRainfall;
         }
+
+        public float GetRainfallByMinMax(float min, float max, bool convertToMeter = true)
+        {
+            float values = Random.Range(min, max);
+            return convertToMeter ? ConvertRainfallToMeter(values) : values;
+        }
+
+        //measured in milimeter.
+        //private float GetRandomRainfallByCategory(bool convertToMeter = true)
+        //{
+        //    min = 0f;
+        //    max = 1f;
+
+        //    switch (rainfallCategory)
+        //    {
+        //        default:
+        //        case Rainfall.Low:
+        //            min = 5f;
+        //            max = 20f;
+        //            break;
+
+        //        case Rainfall.Medium:
+        //            min = 20f;
+        //            max = 50f;
+        //            break;
+
+        //        case Rainfall.Heavy:
+        //            min = 50f;
+        //            max = 100f;
+        //            break;
+
+        //        case Rainfall.DangerouslyDense:
+        //            min = 100f;
+        //            max = 150f;
+        //            break;
+
+        //        case Rainfall.Extreme:
+        //            min = 151f;
+        //            max = 99000f;
+        //            break;
+        //    }
+
+        //    tempRainfall = Random.Range(min, max);
+
+        //    return convertToMeter ? ConvertRainfallToMeter(tempRainfall) : tempRainfall;
+        //}
 
         private float ConvertRainfallToMeter(float rainfall)
         {
@@ -87,10 +140,11 @@ namespace Monos.WSIM.Runtime.Waters
 
     public enum Rainfall
     {
-        Low,
-        Medium,
-        Heavy,
-        DangerouslyDense,
-        Extreme
+        Clear = 0,
+        Low = 1,
+        Medium = 2,
+        Heavy = 3,
+        DangerouslyDense = 4,
+        Extreme = 5,
     }
 }
