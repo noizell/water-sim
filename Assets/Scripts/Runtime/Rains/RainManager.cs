@@ -11,25 +11,27 @@ namespace Monos.WSIM.Runtime.Rains
     public class RainManager : MonoBehaviour
     {
         [SerializeField] WaterManager waterManager;
-        [SerializeField] TextMeshProUGUI dayTimeTmp;
+        [SerializeField] TextMeshProUGUI dayTimeTmp, waterLevelGainTmp, rainCategoryTmp;
 
         FloodSimulatorSetup sims;
 
         float currentHour = 0;
+        float accumulateWaterHeight = 0f;
         bool dayChange = false;
         bool onRain = false;
         int curDay = 0;
         GameObject curRainObj = null;
         Dictionary<Rainfall, GameObject> rainPrefab = new Dictionary<Rainfall, GameObject>();
+        string waterGainFormat;
 
         private void Awake()
         {
             sims = Resources.LoadAll<FloodSimulatorSetup>(GConst.SimulationSetup.FLOOD_SIM_SETUP_DIR_RUNTIME)[0];
             rainPrefab.Add(Rainfall.Clear, null);
-            rainPrefab.Add(Rainfall.Low, sims.LightRainPrefab);
+            rainPrefab.Add(Rainfall.Light, sims.LightRainPrefab);
+            rainPrefab.Add(Rainfall.Low, sims.MediumRainPrefab);
             rainPrefab.Add(Rainfall.Medium, sims.MediumRainPrefab);
-            rainPrefab.Add(Rainfall.Heavy, sims.MediumRainPrefab);
-            rainPrefab.Add(Rainfall.DangerouslyDense, sims.HeavyRainPrefab);
+            rainPrefab.Add(Rainfall.Dense, sims.HeavyRainPrefab);
             rainPrefab.Add(Rainfall.Extreme, sims.HeavyRainPrefab);
         }
 
@@ -92,6 +94,7 @@ namespace Monos.WSIM.Runtime.Rains
         private bool TriggerRain(out Rainfall rain)
         {
             rain = Rainfall.Clear;
+            rainCategoryTmp.text = $"Rain : {rain.ToString()}";
 
             float sumProbability = sims.ClearDayChance
                                    + sims.LowRainChance
@@ -113,10 +116,10 @@ namespace Monos.WSIM.Runtime.Rains
             int[] propName = new int[]
             {
                 (int)Rainfall.Clear,
+                (int)Rainfall.Light,
                 (int)Rainfall.Low,
                 (int)Rainfall.Medium,
-                (int)Rainfall.Heavy,
-                (int)Rainfall.DangerouslyDense,
+                (int)Rainfall.Dense,
                 (int)Rainfall.Extreme
             };
 
@@ -139,6 +142,8 @@ namespace Monos.WSIM.Runtime.Rains
         private void SpawnRain(GameObject rain, Rainfall rainCategory)
         {
             GameObject rainObj = Instantiate(rain);
+            rainCategoryTmp.text = $"Rain : {rainCategory.ToString()}";
+
             curRainObj = rainObj;
             float rainDurationHour = Random.Range(0, sims.RainDuration);
             float waterLevelStoppage = rainDurationHour;
@@ -152,6 +157,7 @@ namespace Monos.WSIM.Runtime.Rains
                 targetWater = (targetWater / sims.MinHourToDay) * rainDurationHour;
 
             targetWaterInc = targetWater * 0.01f;
+            accumulateWaterHeight += targetWater;
 
             if (sims.ChanceProc == FloodSimulatorSetup.RainChanceProc.OnEveryHour)
                 TaskTimer.CreateConditionalTask(0.01f, () => { return waterLevelStoppage == 0; }, (int i) =>
@@ -161,6 +167,8 @@ namespace Monos.WSIM.Runtime.Rains
                     waterLevelStoppage -= 0.01f;
                     accumulateTargetInc = Mathf.Clamp(accumulateTargetInc + targetWaterInc, 0f, targetWater);
                     waterManager.UpdateWaterLevel(targetWaterInc);
+                    waterGainFormat = accumulateWaterHeight.ToString();
+                    waterLevelGainTmp.text = $"Water Level : +{waterGainFormat} m";
                 }
 
             });

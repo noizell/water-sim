@@ -12,22 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c03e477eda57bbd49a51e0f873bd363f, type: 3}
   m_Name: SimulationSetup
   m_EditorClassIdentifier: 
-  RealtimeSecondToHour: 0.01
+  RealtimeSecondToHour: 1
   MinRealtimeSecondToHour: 0
   MaxRealtimeSecondToHour: 200
   HourToDay: 24
   MinHourToDay: 24
   MaxHourToDay: 200
-  LightRainPrefab: {fileID: 1961903509672706, guid: 91d1a359c50bbbc4aac4f6e600aa56cb, type: 3}
-  MediumRainPrefab: {fileID: 3220256211649902271, guid: 5470673bc25d53f46a13f0ba8c98c271, type: 3}
-  HeavyRainPrefab: {fileID: 2709872975824125868, guid: 100ada54d9d209a4fb8899e641c07de7, type: 3}
-  RainDuration: 10
+  LightRainPrefab: {fileID: 6028114805146136074, guid: 4773c52cf600975459337f9093d1992d, type: 3}
+  MediumRainPrefab: {fileID: 6991039157408469796, guid: 548731bbb9dbf924c82269c682f9996d, type: 3}
+  HeavyRainPrefab: {fileID: 1470725034625016891, guid: 00f7f44d0da357146a99277217125344, type: 3}
+  RainDuration: 4
   MinRainDuration: 1
   MaxRainDuration: 24
-  ClearDayChance: 66
-  LowRainChance: 44
-  MediumRainChance: 33
-  HeavyRainChance: 33
+  ClearDayChance: 80
+  LowRainChance: 24
+  MediumRainChance: 21
+  HeavyRainChance: 25
   DangerouslyDenseRainChance: 22
-  ExtremeRainChance: 31
+  ExtremeRainChance: 27
   ChanceProc: 0

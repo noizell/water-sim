@@ -49,29 +49,29 @@ namespace Monos.WSIM.Runtime.Waters
             switch (category)
             {
                 default:
-                case Rainfall.Low:
+                case Rainfall.Light:
                     min = 5f;
                     max = 20f;
                     break;
 
-                case Rainfall.Medium:
+                case Rainfall.Low:
                     min = 20f;
                     max = 50f;
                     break;
 
-                case Rainfall.Heavy:
+                case Rainfall.Medium:
                     min = 50f;
                     max = 100f;
                     break;
 
-                case Rainfall.DangerouslyDense:
+                case Rainfall.Dense:
                     min = 100f;
                     max = 150f;
                     break;
 
                 case Rainfall.Extreme:
-                    min = 151f;
-                    max = 1000f;
+                    min = 1511f;
+                    max = 10000f;
                     break;
             }
         }
@@ -141,10 +141,10 @@ namespace Monos.WSIM.Runtime.Waters
     public enum Rainfall
     {
         Clear = 0,
-        Low = 1,
-        Medium = 2,
-        Heavy = 3,
-        DangerouslyDense = 4,
+        Light = 1,
+        Low = 2,
+        Medium = 3,
+        Dense = 4,
         Extreme = 5,
     }
 }
