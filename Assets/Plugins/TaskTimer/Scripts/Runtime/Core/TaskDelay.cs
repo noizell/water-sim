@@ -13,6 +13,7 @@ namespace NPP.TaskTimers
         protected bool IsRunning;
         protected bool StopRequest;
         protected bool Loop;
+        protected bool Paused = false;
         protected int CurrentInterval;
         protected TaskDelayManager Manager;
         protected DelayType DelayMode;
@@ -88,9 +89,11 @@ namespace NPP.TaskTimers
                     {
                         await UniTask.Create(async () =>
                         {
-                            CurrentInterval += 1;
+                            if (!Paused)
+                                CurrentInterval += 1;
                             await UniTask.Delay((int)(MILISECONDS * Delay), delayType: GetDelayType(), cancellationToken: Cancellation.Token);
-                            OnInterval?.Invoke(CurrentInterval);
+                            if (!Paused)
+                                OnInterval?.Invoke(CurrentInterval);
                         });
                     }
                 }
@@ -100,13 +103,19 @@ namespace NPP.TaskTimers
                     {
                         await UniTask.Create(async () =>
                         {
-                            CurrentInterval += 1;
+                            if (!Paused)
+                                CurrentInterval += 1;
                             await UniTask.Delay((int)(MILISECONDS * Delay), delayType: GetDelayType(), cancellationToken: Cancellation.Token);
-                            OnInterval?.Invoke(CurrentInterval);
-                            Interval--;
+                            if (!Paused)
+                            {
+                                OnInterval?.Invoke(CurrentInterval);
+                                Interval--;
+                            }
                         });
                     }
                 }
+
+                await UniTask.WaitUntil(() => !Paused);
 
                 await UniTask.Create(() =>
                 {
@@ -146,6 +155,11 @@ namespace NPP.TaskTimers
                 default:
                     return Cysharp.Threading.Tasks.DelayType.DeltaTime;
             }
+        }
+
+        public virtual void Pause(bool paused)
+        {
+            Paused = paused;
         }
     }
 

@@ -24,7 +24,7 @@ MonoBehaviour:
   RainDuration: 4
   MinRainDuration: 1
   MaxRainDuration: 24
-  ClearDayChance: 80
+  ClearDayChance: 75
   LowRainChance: 24
   MediumRainChance: 21
   HeavyRainChance: 25

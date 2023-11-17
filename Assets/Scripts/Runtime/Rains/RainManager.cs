@@ -1,10 +1,14 @@
+using Cysharp.Threading.Tasks;
 using Monos.WSIM.Runtime.Simulations;
+using Monos.WSIM.Runtime.UI;
 using Monos.WSIM.Runtime.Waters;
 using NPP.TaskTimers;
+using SuperMaxim.Messaging;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using static Monos.WSIM.Runtime.UI.FloodWarningNotificator;
 
 namespace Monos.WSIM.Runtime.Rains
 {
@@ -24,6 +28,10 @@ namespace Monos.WSIM.Runtime.Rains
         Dictionary<Rainfall, GameObject> rainPrefab = new Dictionary<Rainfall, GameObject>();
         string waterGainFormat;
 
+        TaskDelay simulationWaiter;
+
+        List<TaskDelay> rainWatchers = new List<TaskDelay>();
+
         private void Awake()
         {
             sims = Resources.LoadAll<FloodSimulatorSetup>(GConst.SimulationSetup.FLOOD_SIM_SETUP_DIR_RUNTIME)[0];
@@ -33,11 +41,65 @@ namespace Monos.WSIM.Runtime.Rains
             rainPrefab.Add(Rainfall.Medium, sims.MediumRainPrefab);
             rainPrefab.Add(Rainfall.Dense, sims.HeavyRainPrefab);
             rainPrefab.Add(Rainfall.Extreme, sims.HeavyRainPrefab);
+
+            simulationWaiter = TaskTimer.CreateTask(0.00001f);
+        }
+
+        private void UpdateSimulationTime(System.Action onUpdate)
+        {
+            if (simulationWaiter.Completed())
+            {
+                simulationWaiter = TaskTimer.CreateTask(sims.RealtimeSecondToHour / TimeController.Instance.CurrentSpeedMultiplier, () =>
+                {
+                    UpdateSimulationTime(onUpdate);
+                    if (TimeController.Instance.Paused) return;
+                    onUpdate?.Invoke();
+                });
+            }
         }
 
         private void Start()
         {
-            TaskTimer.CreateTaskLoop(sims.RealtimeSecondToHour, null, (int i) =>
+            //allowing for dynamically adjust speed mult.
+            if (simulationWaiter.Completed())
+            {
+                simulationWaiter = TaskTimer.CreateTask(sims.RealtimeSecondToHour / TimeController.Instance.CurrentSpeedMultiplier, () =>
+                {
+                    UpdateSimulationTime(AdvanceTime);
+                    if (TimeController.Instance.Paused) return;
+                    AdvanceTime();
+                });
+            }
+
+            //for pausing/resuming rain
+            TaskTimer.CreateTaskLoop(0.001f, null, (int i) =>
+            {
+                if (TimeController.Instance.Paused)
+                    PauseRain(true);
+                else
+                    PauseRain(false);
+
+                void PauseRain(bool pause)
+                {
+                    for (int j = 0; j < rainWatchers.Count; j++)
+                    {
+                        if (rainWatchers[j].Completed()) continue;
+                        rainWatchers[j].Pause(pause);
+                    }
+                }
+            });
+
+            //periodically remove completed rain watcher.
+            TaskTimer.CreateTaskLoop(2f, null, (int iv) =>
+            {
+                for (global::System.Int32 i = rainWatchers.Count - (1); i >= 0; i--)
+                {
+                    if (rainWatchers[i].Completed())
+                        rainWatchers.RemoveAt(i);
+                }
+            });
+
+            void AdvanceTime()
             {
                 dayChange = false;
                 if (OkayToAdvanceDay(currentHour))
@@ -52,8 +114,7 @@ namespace Monos.WSIM.Runtime.Rains
                 CheckTriggerRain();
 
                 dayTimeTmp.text = $"Hour : {currentHour}, Day {curDay}";
-
-            }, true, DelayType.Scaled);
+            }
         }
 
         private void CheckTriggerRain()
@@ -171,24 +232,27 @@ namespace Monos.WSIM.Runtime.Rains
                     waterLevelGainTmp.text = $"Water Level : +{waterGainFormat} m";
                 }
 
+            }, () =>
+            {
+                Messenger.Default.Publish(new WaterLevelPayload(accumulateWaterHeight));
             });
 
-            TaskTimer.CreateTask(rainDurationHour, () =>
+            rainWatchers.Add(TaskTimer.CreateTask(rainDurationHour, () =>
             {
                 onRain = false;
+                if (rainObj == null) return;
                 GetAvailableParticleSystem(rainObj).ToList().ForEach(x => x.startSpeed = 0f);
-                TaskTimer.CreateTask(1f, () =>
+                TaskTimer.CreateTask(1f, async () =>
                 {
-                    //if (sims.ChanceProc == FloodSimulatorSetup.RainChanceProc.OnEveryDay)
-                    //    waterManager.UpdateWaterLevel(Mathf.Abs(targetWater));
+                    await UniTask.WaitUntil(() => !TimeController.Instance.Paused);
+
                     Destroy(rainObj);
                 });
-            });
-
-
+            }));
 
             ParticleSystem[] GetAvailableParticleSystem(GameObject g)
             {
+                if (g == null) return null;
                 ParticleSystem[] par = g.GetComponentsInChildren<ParticleSystem>();
                 return par;
             }

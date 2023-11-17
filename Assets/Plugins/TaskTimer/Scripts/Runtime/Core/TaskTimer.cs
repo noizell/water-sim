@@ -84,6 +84,15 @@ namespace NPP.TaskTimers
             taskDelay.Stop(overrideDoneCallback, overrideCallback);
         }
         /// <summary>
+        /// Issue pause/resume for selected task.
+        /// </summary>
+        /// <param name="taskDelay"></param>
+        /// <param name="paused"></param>
+        public static void PauseTask(TaskDelay taskDelay, bool paused = true)
+        {
+            taskDelay.Pause(paused);
+        }
+        /// <summary>
         /// Check if <see cref="TaskDelay"/> is running.
         /// </summary>
         /// <param name="delay">selected <see cref="TaskDelay"/></param>
