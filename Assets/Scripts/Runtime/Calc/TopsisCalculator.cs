@@ -53,7 +53,6 @@ public class TopsisCalculator
     public List<CalculatedData> Differential;
 
     readonly List<float> divider;
-    float[] positiveIdealSolution, negativeIdealSolution;
 
     public TopsisCalculator()
     {
