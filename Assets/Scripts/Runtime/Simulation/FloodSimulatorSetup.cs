@@ -1,6 +1,8 @@
 ﻿using Monos.WSIM.Runtime.Simulations;
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.Callbacks;
+#endif
 using UnityEngine;
 
 namespace Monos.WSIM.Runtime.Simulations
@@ -38,8 +40,10 @@ namespace Monos.WSIM.Runtime.Simulations
     }
 }
 
+#region EDITOR ONLY
 namespace Monos.WSIM.Editors.Simulations
 {
+#if UNITY_EDITOR
     public class AssetHandler
     {
         [OnOpenAsset()]
@@ -387,7 +391,7 @@ namespace Monos.WSIM.Editors.Simulations
             GUILayout.EndHorizontal();
         }
     }
-
+#endif
     public enum FloodMenuEnum
     {
         Time = 0,
@@ -397,3 +401,4 @@ namespace Monos.WSIM.Editors.Simulations
         None = -99
     }
 }
+#endregion
