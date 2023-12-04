@@ -5,17 +5,17 @@ using Monos.WSIM.Runtime.Waters;
 using NPP.TaskTimers;
 using SuperMaxim.Messaging;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
-using static Monos.WSIM.Runtime.UI.FloodWarningNotificator;
 
 namespace Monos.WSIM.Runtime.Rains
 {
+
     public class RainManager : MonoBehaviour
     {
         [SerializeField] WaterManager waterManager;
         [SerializeField] TextMeshProUGUI dayTimeTmp, waterLevelGainTmp, rainCategoryTmp;
+        [SerializeField] int startingRainCount = 5;
 
         FloodSimulatorSetup sims;
 
@@ -32,6 +32,8 @@ namespace Monos.WSIM.Runtime.Rains
 
         List<TaskDelay> rainWatchers = new List<TaskDelay>();
 
+        Dictionary<Rainfall, List<RainParticleController>> cachedRain = new Dictionary<Rainfall, List<RainParticleController>>();
+
         private void Awake()
         {
             sims = Resources.LoadAll<FloodSimulatorSetup>(GConst.SimulationSetup.FLOOD_SIM_SETUP_DIR_RUNTIME)[0];
@@ -42,7 +44,58 @@ namespace Monos.WSIM.Runtime.Rains
             rainPrefab.Add(Rainfall.Dense, sims.HeavyRainPrefab);
             rainPrefab.Add(Rainfall.Extreme, sims.HeavyRainPrefab);
 
+            CacheRains();
+
             simulationWaiter = TaskTimer.CreateTask(0.00001f);
+        }
+
+        private void CacheRains()
+        {
+            cachedRain.Add(Rainfall.Clear, new List<RainParticleController>());
+            cachedRain.Add(Rainfall.Light, new List<RainParticleController>());
+            cachedRain.Add(Rainfall.Low, new List<RainParticleController>());
+            cachedRain.Add(Rainfall.Medium, new List<RainParticleController>());
+            cachedRain.Add(Rainfall.Dense, new List<RainParticleController>());
+            cachedRain.Add(Rainfall.Extreme, new List<RainParticleController>());
+
+            for (int i = 0; i < startingRainCount; i++)
+            {
+                cachedRain[Rainfall.Clear].Add(null);
+                cachedRain[Rainfall.Light].Add(Instantiate(rainPrefab[Rainfall.Light]).GetComponent<RainParticleController>());
+                cachedRain[Rainfall.Low].Add(Instantiate(rainPrefab[Rainfall.Low]).GetComponent<RainParticleController>());
+                cachedRain[Rainfall.Medium].Add(Instantiate(rainPrefab[Rainfall.Medium]).GetComponent<RainParticleController>());
+                cachedRain[Rainfall.Dense].Add(Instantiate(rainPrefab[Rainfall.Dense]).GetComponent<RainParticleController>());
+                cachedRain[Rainfall.Extreme].Add(Instantiate(rainPrefab[Rainfall.Extreme]).GetComponent<RainParticleController>());
+            }
+            for (int i = 0; i < startingRainCount; i++)
+            {
+                //cachedRain[Rainfall.Light][i].SetActive(false);
+                //cachedRain[Rainfall.Low][i].SetActive(false);
+                //cachedRain[Rainfall.Medium][i].SetActive(false);
+                //cachedRain[Rainfall.Dense][i].SetActive(false);
+                //cachedRain[Rainfall.Extreme][i].SetActive(false);
+
+                cachedRain[Rainfall.Light][i].ToggleActive(false);
+                cachedRain[Rainfall.Low][i].ToggleActive(false);
+                cachedRain[Rainfall.Medium][i].ToggleActive(false);
+                cachedRain[Rainfall.Dense][i].ToggleActive(false);
+                cachedRain[Rainfall.Extreme][i].ToggleActive(false);
+            }
+        }
+
+        private RainParticleController FindAvailableOrSpawnNewRain(Rainfall rain)
+        {
+            if (rain == Rainfall.Clear) return null;
+            var r = cachedRain[rain].Find(x => !x.Active);
+            if (r == null)
+            {
+                var rainP = Instantiate(rainPrefab[rain].GetComponent<RainParticleController>());
+                rainP.ToggleActive(false);
+                cachedRain[rain].Add(rainP);
+                return cachedRain[rain].Find(x => !x.Active);
+            }
+
+            return r;
         }
 
         private void UpdateSimulationTime(System.Action onUpdate)
@@ -152,19 +205,22 @@ namespace Monos.WSIM.Runtime.Rains
             return currentHour >= sims.MinHourToDay - 1;
         }
 
+        float[] propLoop;
+        int[] propName;
+        float sumProbability, randomNumber;
         private bool TriggerRain(out Rainfall rain)
         {
             rain = Rainfall.Clear;
             rainCategoryTmp.text = $"Rain : {rain.ToString()}";
 
-            float sumProbability = sims.ClearDayChance
+            sumProbability = sims.ClearDayChance
                                    + sims.LowRainChance
                                    + sims.MediumRainChance
                                    + sims.HeavyRainChance
                                    + sims.DangerouslyDenseRainChance
                                    + sims.ExtremeRainChance;
 
-            float[] propLoop = new float[]
+            propLoop = new float[]
             {
                 sims.ClearDayChance,
                 sims.LowRainChance,
@@ -174,7 +230,7 @@ namespace Monos.WSIM.Runtime.Rains
                 sims.ExtremeRainChance
             };
 
-            int[] propName = new int[]
+            propName = new int[]
             {
                 (int)Rainfall.Clear,
                 (int)Rainfall.Light,
@@ -184,7 +240,7 @@ namespace Monos.WSIM.Runtime.Rains
                 (int)Rainfall.Extreme
             };
 
-            float randomNumber = Mathf.Floor(Random.Range(0, sumProbability));
+            randomNumber = Mathf.Floor(Random.Range(0, sumProbability));
 
             for (int i = 0; i < propLoop.Length; i++)
             {
@@ -202,10 +258,12 @@ namespace Monos.WSIM.Runtime.Rains
 
         private void SpawnRain(GameObject rain, Rainfall rainCategory)
         {
-            GameObject rainObj = Instantiate(rain);
+            //GameObject rainObj = Instantiate(rain);
+            var rainObj = FindAvailableOrSpawnNewRain(rainCategory);
+            rainObj.ToggleActive(true);
             rainCategoryTmp.text = $"Rain : {rainCategory.ToString()}";
 
-            curRainObj = rainObj;
+            curRainObj = rainObj.gameObject;
             float rainDurationHour = Random.Range(0, sims.RainDuration);
             float waterLevelStoppage = rainDurationHour;
 
@@ -241,12 +299,12 @@ namespace Monos.WSIM.Runtime.Rains
             {
                 onRain = false;
                 if (rainObj == null) return;
-                GetAvailableParticleSystem(rainObj).ToList().ForEach(x => x.startSpeed = 0f);
-                TaskTimer.CreateTask(1f, async () =>
+                //GetAvailableParticleSystem(rainObj).ToList().ForEach(x => x.startSpeed = 0f);
+                TaskTimer.CreateTask(0.1f, async () =>
                 {
                     await UniTask.WaitUntil(() => !TimeController.Instance.Paused);
-
-                    Destroy(rainObj);
+                    rainObj.ToggleActive(false);
+                    curRainObj = null;
                 });
             }));
 
