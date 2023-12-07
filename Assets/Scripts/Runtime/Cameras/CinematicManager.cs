@@ -1,5 +1,7 @@
 ﻿using Cinemachine;
 using DG.Tweening;
+using Monos.WSIM.Runtime.UI;
+using SuperMaxim.Messaging;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -47,6 +49,8 @@ namespace Monos.WSIM.Runtime.Cameras
 
                 currentRegionId = currentRegionId + 1 < regions.Length ? currentRegionId + 1 : 0;
                 regions[currentRegionId].SetActive(true);
+
+                Messenger.Default.Publish(new RoadnameNotificator.RoadNamePayload(regions[currentRegionId]));
             });
         }
 
